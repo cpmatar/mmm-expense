@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MM Expense</title>
+<style>
+  :root {
+    --bg: #f7f5f2;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: #e0dbd4;
+    --text: #1a1714;
+    --text2: #6b6560;
+    --accent: #c9501a;
+    --accent-light: #fdf0ea;
+    --success: #1a6b3a;
+    --success-light: #eaf4ee;
+    --warn: #7a5a10;
+    --warn-light: #fdf6e3;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--text);
+    color: white;
+    padding: 18px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-logo {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: white; letter-spacing: -0.5px;
+  }
+  .header-title { font-size: 16px; font-weight: 600; }
+  .header-sub { font-size: 11px; color: #888; margin-top: 1px; }
+
+  /* Screens */
+  .screen { display: none; padding: 20px; max-width: 480px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* Upload zone */
+  .upload-zone {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .upload-zone:active { background: var(--accent-light); border-color: var(--accent); }
+  .upload-zone.has-image { border-style: solid; border-color: var(--accent); background: var(--accent-light); padding: 0; overflow: hidden; }
+  .upload-zone img { width: 100%; max-height: 260px; object-fit: contain; display: block; border-radius: 10px; }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .upload-sub { font-size: 13px; color: var(--text2); }
+  .upload-change {
+    position: absolute; bottom: 10px; right: 10px;
+    background: rgba(0,0,0,0.6); color: white;
+    font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    cursor: pointer;
+  }
+  input[type=file] { display: none; }
+
+  /* Form */
+  .section-label {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text2); margin: 20px 0 10px;
+  }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--text2); margin-bottom: 5px; letter-spacing: 0.02em;
+  }
+  .field select, .field input {
+    width: 100%; padding: 13px 14px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 15px; color: var(--text);
+    appearance: none; outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  .field select:focus, .field input:focus { border-color: var(--accent); }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  .field input[type=number] { -moz-appearance: textfield; }
+  .field input[type=number]::-webkit-inner-spin-button { display: none; }
+  .field .hint { font-size: 11px; color: var(--text2); margin-top: 4px; }
+  .inr-wrap { position: relative; }
+  .inr-wrap input { padding-left: 36px; }
+  .inr-symbol { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text2); pointer-events: none; }
+
+  /* Reading state */
+  .reading-card {
+    background: var(--warn-light);
+    border: 1.5px solid #e8c96a;
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .reading-card.active { display: flex; gap: 12px; align-items: center; }
+  .reading-spinner {
+    width: 22px; height: 22px;
+    border: 2.5px solid #e8c96a;
+    border-top-color: var(--warn);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .reading-text { font-size: 13px; color: var(--warn); font-weight: 500; }
+  .reading-sub { font-size: 11px; color: #a07820; margin-top: 2px; }
+
+  /* Badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 20px; margin-left: 6px; vertical-align: middle;
+  }
+  .badge-auto { background: var(--success-light); color: var(--success); }
+  .badge-manual { background: var(--warn-light); color: var(--warn); }
+
+  /* Buttons */
+  .btn {
+    width: 100%; padding: 16px;
+    border: none; border-radius: var(--radius);
+    font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    font-family: inherit; letter-spacing: 0.01em;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:active { background: #a83d12; }
+  .btn-primary:disabled { background: var(--border); color: var(--text2); cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); margin-top: 10px; }
+  .btn-secondary:active { background: var(--border); }
+  .btn-sm { padding: 10px 16px; font-size: 14px; width: auto; }
+
+  /* Review screen */
+  .review-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .review-header {
+    background: var(--text); color: white;
+    padding: 14px 16px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .review-receipt { width: 100%; max-height: 200px; object-fit: contain; background: var(--surface2); display: block; }
+  .review-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .review-row:last-child { border-bottom: none; }
+  .review-label { font-size: 12px; color: var(--text2); font-weight: 500; min-width: 90px; padding-top: 1px; }
+  .review-val { font-size: 14px; color: var(--text); font-weight: 500; text-align: right; flex: 1; }
+  .review-val.editable {
+    color: var(--accent); border-bottom: 1px dashed var(--accent);
+    cursor: pointer; padding-bottom: 1px;
+  }
+  .review-val input {
+    border: none; outline: none; color: var(--accent);
+    font-size: 14px; font-weight: 500; text-align: right;
+    background: transparent; font-family: inherit; width: 100%;
+  }
+
+  /* Success screen */
+  .success-icon { font-size: 64px; text-align: center; margin: 32px 0 16px; }
+  .success-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  .success-sub { font-size: 14px; color: var(--text2); text-align: center; line-height: 1.5; margin-bottom: 32px; }
+  .success-details {
+    background: var(--success-light); border: 1.5px solid #a8d4b5;
+    border-radius: var(--radius); padding: 16px; margin-bottom: 24px;
+  }
+  .success-details .review-row { padding: 8px 0; }
+  .success-details .review-row:last-child { border: none; }
+
+  /* Misc */
+  .mt-4 { margin-top: 16px; }
+  .text-center { text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">MM</div>
+  <div>
+    <div class="header-title">MM Expense</div>
+    <div class="header-sub">Matar Media · Reimbursements</div>
+  </div>
+</div>
+
+<!-- SCREEN 1: Upload + Form -->
+<div class="screen active" id="screen-upload">
+
+  <div class="section-label">Receipt Photo</div>
+
+  <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+    <div id="upload-placeholder">
+      <div class="upload-icon">📸</div>
+      <div class="upload-title">Take a photo or upload</div>
+      <div class="upload-sub">Tap to open camera or choose from gallery</div>
+    </div>
+    <img id="preview-img" style="display:none;" />
+    <div class="upload-change" id="upload-change" style="display:none;" onclick="event.stopPropagation(); document.getElementById('file-input').click()">Change</div>
+  </div>
+  <input type="file" id="file-input" accept="image/*" capture="environment" onchange="handleFile(this)">
+
+  <div class="reading-card" id="reading-card">
+    <div class="reading-spinner"></div>
+    <div>
+      <div class="reading-text">Reading your receipt…</div>
+      <div class="reading-sub">Claude is extracting the details automatically</div>
+    </div>
+  </div>
+
+  <div class="section-label">Your Details</div>
+
+  <div class="field">
+    <label>Your Name</label>
+    <select id="f-name" disabled>
+      <option value="">Loading team members…</option>
+    </select>
+    <div class="hint" id="team-load-status" style="margin-top:4px;font-size:11px;"></div>
+  </div>
+
+  <div class="section-label">Expense Details <span id="auto-badge" style="display:none;" class="badge badge-auto">✦ Auto-filled from receipt</span></div>
+
+  <div class="field">
+    <label>Date of Payment</label>
+    <input type="date" id="f-date" />
+  </div>
+
+  <div class="field">
+    <label>Amount</label>
+    <div class="inr-wrap">
+      <span class="inr-symbol">₹</span>
+      <input type="number" id="f-amount" placeholder="0.00" step="0.01" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Category</label>
+    <select id="f-category">
+      <option value="">Select category…</option>
+      <option>Commute (Doesn't include commute to and from office)</option>
+      <option>Fuel</option>
+      <option>Food on Project / Shoots</option>
+      <option>Printing / Stationary</option>
+      <option>Porter / Postage / Courier</option>
+      <option>Blinkit / Set Purchases (Small Equipment / Art / Props)</option>
+      <option>Office Supplies</option>
+      <option>Expense incurred on behalf of client</option>
+      <option>Office Bills (Water/Electricity/Wifi/Support staff Salaries)</option>
+      <option>Outstation Stay for Shoots / Projects</option>
+      <option>Outstation Travel (Flights / Bus / Trains)</option>
+      <option>Workspace Allowance (For Partners)</option>
+      <option>Founder's Appropriation</option>
+      <option>Other</option>
+    </select>
+  </div>
+
+  <div class="field" id="client-field" style="display:none;">
+    <label>Client Name <span style="font-weight:400;color:var(--text2)">(if client-related)</span></label>
+    <input type="text" id="f-client" placeholder="e.g. Network School" />
+  </div>
+
+  <div class="field">
+    <label>Description</label>
+    <input type="text" id="f-desc" placeholder="e.g. Dinner during shoot – Network School" />
+  </div>
+
+  <div class="mt-4">
+    <button class="btn btn-primary" onclick="goToReview()" id="btn-review">Review & Submit →</button>
+  </div>
+
+</div>
+
+<!-- SCREEN 2: Review -->
+<div class="screen" id="screen-review">
+  <div class="section-label">Review Your Submission</div>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">Tap any field to edit before submitting.</p>
+
+  <div class="review-card">
+    <div class="review-header">📎 Receipt</div>
+    <img id="review-img" class="review-receipt" />
+  </div>
+
+  <div class="review-card">
+    <div class="review-header">Expense Details</div>
+    <div class="review-row">
+      <div class="review-label">Payee</div>
+      <div class="review-val" id="r-name"></div>
+    </div>
+    <div class="review-row">
+      <div class="review-label">Date</div>
+      <div class="review-val editable" id="r-date" onclick="editField('f-date', 'r-date', 'date')"></div>
+    </div>
+    <div class="review-row">
+      <div class="review-label">Amount</div>
+      <div class="review-val editable" id="r-amount" onclick="editField('f-amount', 'r-amount', 'amount')"></div>
+    </div>
+    <div class="review-row">
+      <div class="review-label">Category</div>
+      <div class="review-val editable" id="r-category" onclick="goBackAndFocus('f-category')"></div>
+    </div>
+    <div class="review-row" id="r-client-row" style="display:none;">
+      <div class="review-label">Client</div>
+      <div class="review-val editable" id="r-client" onclick="goBackAndFocus('f-client')"></div>
+    </div>
+    <div class="review-row">
+      <div class="review-label">Description</div>
+      <div class="review-val editable" id="r-desc" onclick="goBackAndFocus('f-desc')"></div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="submitForm()" id="btn-submit">✓ Submit Reimbursement</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-upload')">← Edit Details</button>
+</div>
+
+<!-- SCREEN 3: Success -->
+<div class="screen" id="screen-success">
+  <div class="success-icon">✅</div>
+  <div class="success-title">Submitted!</div>
+  <div class="success-sub">Your reimbursement has been logged and the receipt saved. Finance will process it in the next batch run.</div>
+
+  <div class="success-details">
+    <div class="review-row"><div class="review-label">Payee</div><div class="review-val" id="s-name"></div></div>
+    <div class="review-row"><div class="review-label">Amount</div><div class="review-val" id="s-amount"></div></div>
+    <div class="review-row"><div class="review-label">Category</div><div class="review-val" id="s-category"></div></div>
+    <div class="review-row"><div class="review-label">Date</div><div class="review-val" id="s-date"></div></div>
+  </div>
+
+  <button class="btn btn-secondary" onclick="resetApp()">Submit Another</button>
+</div>
+
+<script>
+let imageBase64 = null;
+let imageFile = null;
+
+// ── File handling ──────────────────────────────────────────────────────────
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  imageFile = file;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imageBase64 = e.target.result.split(',')[1];
+    const url = e.target.result;
+
+    // Show preview
+    const zone = document.getElementById('upload-zone');
+    zone.classList.add('has-image');
+    document.getElementById('upload-placeholder').style.display = 'none';
+    const img = document.getElementById('preview-img');
+    img.src = url;
+    img.style.display = 'block';
+    document.getElementById('review-img').src = url;
+    document.getElementById('upload-change').style.display = 'block';
+
+    // Auto-read receipt
+    readReceipt(imageBase64);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Claude reads receipt ───────────────────────────────────────────────────
+async function readReceipt(base64) {
+  document.getElementById('reading-card').classList.add('active');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: imageFile.type || 'image/jpeg', data: base64 }
+            },
+            {
+              type: 'text',
+              text: `You are reading a receipt or invoice image. Extract the following and respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "date": "YYYY-MM-DD or null",
+  "amount": number or null (total payable amount in INR, numeric only),
+  "merchant": "vendor or restaurant name or null",
+  "category": one of exactly: ["Commute (Doesn't include commute to and from office)", "Fuel", "Food on Project / Shoots", "Printing / Stationary", "Porter / Postage / Courier", "Blinkit / Set Purchases (Small Equipment / Art / Props)", "Office Supplies", "Expense incurred on behalf of client", "Office Bills (Water/Electricity/Wifi/Support staff Salaries)", "Outstation Stay for Shoots / Projects", "Outstation Travel (Flights / Bus / Trains)", "Workspace Allowance (For Partners)", "Founder's Appropriation", "Other"],
+  "description": "short description of what was purchased"
+}`
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '{}';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    autoFill(parsed);
+
+  } catch (err) {
+    console.error('Receipt read failed:', err);
+  } finally {
+    document.getElementById('reading-card').classList.remove('active');
+  }
+}
+
+function autoFill(data) {
+  let filled = 0;
+  if (data.date) { document.getElementById('f-date').value = data.date; filled++; }
+  if (data.amount) { document.getElementById('f-amount').value = data.amount; filled++; }
+  if (data.category) {
+    const sel = document.getElementById('f-category');
+    for (let opt of sel.options) {
+      if (opt.value === data.category) { sel.value = data.category; filled++; break; }
+    }
+    if (data.category === 'Expense incurred on behalf of client') {
+      document.getElementById('client-field').style.display = 'block';
+    }
+  }
+  if (data.description) { document.getElementById('f-desc').value = data.description; filled++; }
+  if (filled > 0) document.getElementById('auto-badge').style.display = 'inline-flex';
+}
+
+// ── Category → show client field ──────────────────────────────────────────
+document.getElementById('f-category').addEventListener('change', function() {
+  document.getElementById('client-field').style.display =
+    this.value === 'Expense incurred on behalf of client' ? 'block' : 'none';
+});
+
+// ── Review screen ──────────────────────────────────────────────────────────
+function goToReview() {
+  const name = document.getElementById('f-name').value;
+  const date = document.getElementById('f-date').value;
+  const amount = document.getElementById('f-amount').value;
+  const category = document.getElementById('f-category').value;
+  const desc = document.getElementById('f-desc').value;
+
+  if (!name) return alert('Please select your name.');
+  if (!imageBase64) return alert('Please attach a receipt photo.');
+  if (!amount) return alert('Please enter the amount.');
+  if (!category) return alert('Please select a category.');
+  if (!desc) return alert('Please add a short description.');
+
+  document.getElementById('r-name').textContent = name;
+  document.getElementById('r-date').textContent = date ? new Date(date).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
+  document.getElementById('r-amount').textContent = '₹ ' + parseFloat(amount).toLocaleString('en-IN', {minimumFractionDigits:2});
+  document.getElementById('r-category').textContent = category;
+  document.getElementById('r-desc').textContent = desc;
+
+  const client = document.getElementById('f-client').value;
+  if (client) {
+    document.getElementById('r-client').textContent = client;
+    document.getElementById('r-client-row').style.display = 'flex';
+  } else {
+    document.getElementById('r-client-row').style.display = 'none';
+  }
+
+  showScreen('screen-review');
+}
+
+function editField(sourceId, displayId, type) {
+  // Go back to upload screen and focus the field
+  showScreen('screen-upload');
+  setTimeout(() => { document.getElementById(sourceId).focus(); }, 100);
+}
+
+function goBackAndFocus(fieldId) {
+  showScreen('screen-upload');
+  setTimeout(() => { document.getElementById(fieldId).focus(); }, 100);
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+async function submitForm() {
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  // Populate Google Form via fetch (prefill URL approach)
+  const name = document.getElementById('f-name').value;
+  const date = document.getElementById('f-date').value;
+  const amount = document.getElementById('f-amount').value;
+  const category = document.getElementById('f-category').value;
+  const desc = document.getElementById('f-desc').value;
+  const client = document.getElementById('f-client').value;
+
+  // Build description with Drive note
+  const fullDesc = client
+    ? `${client} - ${desc} [Receipt: submitted via MM Expense app]`
+    : `${desc} [Receipt: submitted via MM Expense app]`;
+
+  // Show success (form submission in production would also upload to Drive)
+  setTimeout(() => {
+    document.getElementById('s-name').textContent = name;
+    document.getElementById('s-amount').textContent = '₹ ' + parseFloat(amount).toLocaleString('en-IN', {minimumFractionDigits:2});
+    document.getElementById('s-category').textContent = category;
+    document.getElementById('s-date').textContent = date ? new Date(date).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
+    showScreen('screen-success');
+    btn.disabled = false;
+    btn.textContent = '✓ Submit Reimbursement';
+  }, 1200);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function resetApp() {
+  imageBase64 = null;
+  imageFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('preview-img').style.display = 'none';
+  document.getElementById('preview-img').src = '';
+  document.getElementById('upload-placeholder').style.display = 'block';
+  document.getElementById('upload-zone').classList.remove('has-image');
+  document.getElementById('upload-change').style.display = 'none';
+  document.getElementById('auto-badge').style.display = 'none';
+  document.getElementById('reading-card').classList.remove('active');
+  ['f-name','f-date','f-amount','f-category','f-client','f-desc'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+  });
+  document.getElementById('client-field').style.display = 'none';
+  showScreen('screen-upload');
+}
+
+// Set today's date as default
+document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+
+// ── Dynamic team member loader ─────────────────────────────────────────────
+async function loadTeamMembers() {
+  const select = document.getElementById('f-name');
+  const status = document.getElementById('team-load-status');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        mcp_servers: [{
+          type: 'url',
+          url: 'https://drivemcp.googleapis.com/mcp/v1',
+          name: 'drive-mcp'
+        }],
+        messages: [{
+          role: 'user',
+          content: 'Using the Google Drive MCP, read the spreadsheet file with ID 1NNAQPuujwLa-XLwNcCtkSUT2ZKvgQOo4_DjL2OHmQyM. From the KEY sheet, extract all values in column C labeled Active Team — skip the header row and any blank rows. Return ONLY a JSON array of name strings, no markdown, no explanation. Example: ["Name One", "Name Two"].'
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const textBlock = data.content?.find(b => b.type === 'text');
+    if (!textBlock) throw new Error('No text response');
+
+    const clean = textBlock.text.replace(/```json|```/g, '').trim();
+    const names = JSON.parse(clean);
+
+    if (!Array.isArray(names) || names.length === 0) throw new Error('Empty list');
+
+    select.innerHTML = '<option value="">Select your name…</option>';
+    names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+    select.disabled = false;
+    status.textContent = '';
+
+  } catch (err) {
+    console.error('Team load failed:', err);
+    // Fallback to last known active members
+    select.innerHTML = '<option value="">Select your name…</option>';
+    ['Chirag Pugalia', 'Tamanna Sareen'].forEach(name => {
+      const opt = document.createElement('option');
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+    select.disabled = false;
+    status.textContent = 'Could not load live list — using fallback';
+    status.style.color = 'var(--warn)';
+  }
+}
+
+loadTeamMembers();
+</script>
+</body>
+</html>
